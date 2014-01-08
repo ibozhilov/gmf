@@ -3,12 +3,12 @@ package gmf
 //#include <stdint.h>
 import "C"
 
-//import "unsafe"
+import "unsafe"
 
 import (
 	"fmt"
 
-//	"log"
+	"log"
 )
 
 type Decoder struct {
@@ -36,53 +36,53 @@ func (self *Decoder) GetParameters() map[string]string {
 	return self.Parameter
 }
 
-// func (c *Decoder) Decode(p *Packet) *Frame {
-// 	if p.Size == 0 {
-// 		println("0 size packet in decoder recieved")
-// 		return nil
-// 	}
-// 	p2 := new(avPacket)
-// 	//p2 := C.struct_avPacket{}
-// 	av_init_packet2(p2)
-// 	p2.size = (_Ctype_int)(p.Size)
-// 	p2.data = (*C.uint8_t)(unsafe.Pointer(&p.Data[0]))
-// 	p2.pts = (C.int64_t)(p.Pts.Time)
-// 	p2.duration = (_Ctype_int)(p.Duration.Time)
-// 	p2.flags = _Ctype_int(p.Flags)
-// 	//p2.stream_index=_Ctype_int(p.Stream)
-// 	p2.dts = C.int64_t(AV_NOPTS_VALUE)
+func (c *Decoder) Decode(p *Packet) *Frame {
+	if p.Size == 0 {
+		println("0 size packet in decoder recieved")
+		return nil
+	}
+	p2 := new(avPacket)
+	//p2 := C.struct_avPacket{}
+	av_init_packet2(p2)
+	p2.size = (_Ctype_int)(p.Size)
+	p2.data = (*C.uint8_t)(unsafe.Pointer(&p.Data[0]))
+	p2.pts = (C.int64_t)(p.Pts.Time)
+	p2.duration = (_Ctype_int)(p.Duration.Time)
+	p2.flags = _Ctype_int(p.Flags)
+	//p2.stream_index=_Ctype_int(p.Stream)
+	p2.dts = C.int64_t(AV_NOPTS_VALUE)
 
-// 	if int32(c.Ctx.ctx.codec_type) == CODEC_TYPE_VIDEO {
-// 		return c.decodeVideo(p2)
-// 	}
-// 	if int32(c.Ctx.ctx.codec_type) == CODEC_TYPE_AUDIO {
-// 		return c.decodeAudio(p2)
-// 	}
-// 	return nil
-// }
+	if int32(c.Ctx.ctx.codec_type) == CODEC_TYPE_VIDEO {
+		return c.decodeVideo(p2)
+	}
+	if int32(c.Ctx.ctx.codec_type) == CODEC_TYPE_AUDIO {
+		return c.decodeAudio(p2)
+	}
+	return nil
+}
 
-// func (c *Decoder) decodeAudio(p *avPacket) *Frame {
-// 	if !c.Valid {
-// 		return nil
-// 	}
-// 	//println("decoder audio")
-// 	samples_size := AVCODEC_MAX_AUDIO_FRAME_SIZE
-// 	outbuf := make([]byte, samples_size) //(*C.uint8_t) (C.av_malloc(C.uint(samples_size)));
+func (c *Decoder) decodeAudio(p *avPacket) *Frame {
+	if !c.Valid {
+		return nil
+	}
+	//println("decoder audio")
+	samples_size := AVCODEC_MAX_AUDIO_FRAME_SIZE
+	outbuf := make([]byte, samples_size) //(*C.uint8_t) (C.av_malloc(C.uint(samples_size)));
 
-// 	//TODO
-// 	//	avcodec_decode_audio(&c.Ctx, outbuf, &samples_size, p)
+	//TODO
+	avcodec_decode_audio(&c.Ctx, outbuf, &samples_size, p)
 
-// 	var frame *Frame = new(Frame)
-// 	frame.buffer = outbuf
-// 	frame.size = samples_size
-// 	if samples_size > 0 {
-// 		frame.isFinished = true
-// 	} else {
-// 		frame.isFinished = false
-// 		log.Printf("frame not finished")
-// 	}
-// 	return frame
-// }
+	var frame *Frame = new(Frame)
+	frame.buffer = outbuf
+	frame.size = samples_size
+	if samples_size > 0 {
+		frame.isFinished = true
+	} else {
+		frame.isFinished = false
+		log.Printf("frame not finished")
+	}
+	return frame
+}
 
 func (c *Decoder) GetCodecType() int32 {
 	return int32(c.Ctx.ctx.codec_type)

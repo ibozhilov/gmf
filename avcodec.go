@@ -287,13 +287,13 @@ func avcodec_decode_video(ctx *_CodecContext, frame *Frame, finished *int, packe
 		(*C.AVPacket)(unsafe.Pointer(packet))))
 }
 
-// func avcodec_decode_audio(ctx *_CodecContext, buffer []byte, size *int, packet *avPacket) int {
-// 	return int(C.avcodec_decode_audio4(
-// 		ctx.ctx,
-// 		(*C.int16_t)(unsafe.Pointer(&buffer[0])),
-// 		(*C.int)(unsafe.Pointer(size)),
-// 		(*C.AVPacket)(unsafe.Pointer(packet))))
-// }
+func avcodec_decode_audio(ctx *_CodecContext, buffer []byte, size *int, packet *avPacket) int {
+	return int(C.avcodec_decode_audio4(
+		ctx.ctx,
+		(*C.int16_t)(unsafe.Pointer(&buffer[0])),
+		(*C.int)(unsafe.Pointer(size)),
+		(*C.AVPacket)(unsafe.Pointer(packet))))
+}
 
 func avcodec_encode_video(ctx *_CodecContext, buffer []byte, size *int, frame *Frame) int {
 	return int(C.avcodec_encode_video(
