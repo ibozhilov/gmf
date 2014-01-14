@@ -80,53 +80,46 @@ func (c *Encoder) encodeVideo(f *Frame) *Packet {
 	return nil
 }
 
-// func (c *Encoder) encodeAudio(f *Frame) *Packet {
-// 	bpsf := av_get_bits_per_sample_fmt(c.Ctx.ctx.sample_fmt) / 8
-// 	if c.Ctx.ctx.frame_size > 1 {
-// 		frame_bytes := int(c.Ctx.ctx.frame_size) * bpsf * int(c.Ctx.ctx.channels)
-// 		if av_fifo_realloc(c.audio_fifo, uint(av_fifo_size(c.audio_fifo)+f.size)) < 0 {
-// 			log.Printf("Error while realloc audio fifo")
-// 		}
-// 		av_fifo_generic_write(c.audio_fifo, f.buffer, f.size)
-// 		audio_buf_size := (2 * 128 * 1024)
-// 		audio_buf := make([]byte, audio_buf_size+8) //static_cast<uint8_t*> (av_malloc(audio_buf_size));
-// 		for av_fifo_size(c.audio_fifo) >= frame_bytes {
-// 			av_fifo_generic_read(c.audio_fifo, audio_buf, frame_bytes)
-// 			out_size := avcodec_encode_audio(
-// 				&c.Ctx,
-// 				c.buffer,
-// 				&c.buffer_size,
-// 				audio_buf)
-// 			if out_size < 0 {
-// 				log.Printf("Error Encoding Audio Frame")
-// 			}
-// 			if out_size == 0 {
-// 				continue
-// 			}
-
-// 			var result *Packet = new(Packet)
-// 			av_init_packet(result)
-// 			result.Size = out_size
-// 			result.Data = make([]byte, c.buffer_size+8)
-// 			for i := 0; i < out_size; i++ {
-// 				result.Data[i] = c.buffer[i]
-// 			}
-// 			result.Duration = Timestamp{int64(c.Ctx.ctx.frame_size), Rational{1, int(c.Ctx.ctx.sample_rate)}}
-// 			result.Pts = Timestamp{int64(c.last_dts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
-// 			result.Dts = Timestamp{int64(c.last_dts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
-// 			result.Stream = c.stream_index
-// 			c.last_dts += result.Duration.Time
-// 			/*special handling for vbr audio encoder*/
-// 			if c.Ctx.ctx.coded_frame != nil {
-// 				result.Dts = Timestamp{int64(c.Ctx.ctx.coded_frame.pts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
-// 				result.Pts = Timestamp{int64(c.Ctx.ctx.coded_frame.pts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
-// 			}
-// 			/*Audio Packets are allways Key Packets*/
-// 			result.Flags |= 0x0001
-// 			if c.Track != nil {
-// 				c.Track.WritePacket(result)
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
+func (c *Encoder) encodeAudio(f *Frame) *Packet {
+	var got_output int
+	bpsf := av_get_bits_per_sample_fmt(c.Ctx.ctx.sample_fmt) / 8
+	if c.Ctx.ctx.frame_size > 1 {
+		frame_bytes := int(c.Ctx.ctx.frame_size) * bpsf * int(c.Ctx.ctx.channels)
+		if av_fifo_realloc(c.audio_fifo, uint(av_fifo_size(c.audio_fifo)+f.size)) < 0 {
+			log.Printf("Error while realloc audio fifo")
+		}
+		av_fifo_generic_write(c.audio_fifo, f.buffer, f.size)
+		audio_buf_size := (2 * 128 * 1024)
+		audio_buf := make([]byte, audio_buf_size+8) //static_cast<uint8_t*> (av_malloc(audio_buf_size));
+		for av_fifo_size(c.audio_fifo) >= frame_bytes {
+			av_fifo_generic_read(c.audio_fifo, audio_buf, frame_bytes)
+			avcodec_encode_audio(&c.Ctx, c.buffer, audio_buf, got_output)
+			if got_output != 0 {
+				log.Printf("Error Encoding Audio Frame")
+			}
+			var result *Packet = new(Packet)
+			av_init_packet(result)
+			//result.Size = out_size
+			result.Data = make([]byte, c.buffer_size+8)
+			for i, value := range c.buffer {
+				result.Data[i] = value
+			}
+			result.Duration = Timestamp{int64(c.Ctx.ctx.frame_size), Rational{1, int(c.Ctx.ctx.sample_rate)}}
+			result.Pts = Timestamp{int64(c.last_dts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
+			result.Dts = Timestamp{int64(c.last_dts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
+			result.Stream = c.stream_index
+			c.last_dts += result.Duration.Time
+			/*special handling for vbr audio encoder*/
+			if c.Ctx.ctx.coded_frame != nil {
+				result.Dts = Timestamp{int64(c.Ctx.ctx.coded_frame.pts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
+				result.Pts = Timestamp{int64(c.Ctx.ctx.coded_frame.pts), Rational{1, int(c.Ctx.ctx.sample_rate)}}
+			}
+			/*Audio Packets are allways Key Packets*/
+			result.Flags |= 0x0001
+			if c.Track != nil {
+				c.Track.WritePacket(result)
+			}
+		}
+	}
+	return nil
+}

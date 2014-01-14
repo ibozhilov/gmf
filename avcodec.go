@@ -290,7 +290,7 @@ func avcodec_decode_video(ctx *_CodecContext, frame *Frame, finished *int, packe
 func avcodec_decode_audio(ctx *_CodecContext, buffer []byte, size *int, packet *avPacket) int {
 	return int(C.avcodec_decode_audio4(
 		ctx.ctx,
-		(*C.int16_t)(unsafe.Pointer(&buffer[0])),
+		(*C.AVFrame)(unsafe.Pointer(&buffer[0])),
 		(*C.int)(unsafe.Pointer(size)),
 		(*C.AVPacket)(unsafe.Pointer(packet))))
 }
@@ -303,15 +303,15 @@ func avcodec_encode_video(ctx *_CodecContext, buffer []byte, size *int, frame *F
 		(*C.AVFrame)(frame.avframe)))
 }
 
-// func avcodec_encode_audio(ctx *_CodecContext, outbuffer []byte, size *int, inbuffer []byte) int {
-// 	out_size := C.avcodec_encode_audio2(
-// 		ctx.ctx,
-// 		(*C.uint8_t)(unsafe.Pointer(&outbuffer[0])),
-// 		C.int(*size),
-// 		(*C.short)(unsafe.Pointer(&inbuffer[0])))
+func avcodec_encode_audio(ctx *_CodecContext, outbuffer []byte, inbuffer []byte, got_output int) int {
+	out_size := C.avcodec_encode_audio2(
+		ctx.ctx,
+		(*C.AVPacket)(unsafe.Pointer(&outbuffer[0])),
+		(*C.AVFrame)(unsafe.Pointer(&inbuffer[0])),
+		(*C.int)(unsafe.Pointer(&got_output)))
 
-// 	return int(out_size)
-// }
+	return int(out_size)
+}
 
 func avpicture_deinterlace(outframe, inframe *Frame, fmt, width, height int) int {
 	return int(C.avpicture_deinterlace(
